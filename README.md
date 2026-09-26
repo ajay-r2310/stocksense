@@ -264,7 +264,126 @@ Every forecast/stockout prediction logs a row to `PredictionLog`. Daily/on-deman
 
 ---
 
-## 12. Tech Stack & Implementation Plan
-- **Backend**: FastAPI, SQLAlchemy, Alembic, Pandas/NumPy, APScheduler, PyJWT, Pydantic, Passlib/Bcrypt.
-- **Frontend**: React (TypeScript), Tailwind CSS, Lucide icons, Recharts.
-- **Database**: PostgreSQL / SQLite (with transactional integrity & row-locking support).
+## 12. System Architecture
+
+```
+                                  +---------------------------------------+
+                                  |              STOCKSENSE               |
+                                  |    Manager Dashboard & Worker Mode    |
+                                  +-------------------+-------------------+
+                                                      |
+                                                      v
+                                  +---------------------------------------+
+                                  |             FASTAPI CORE              |
+                                  |   RBAC / Auth / REST API Routing      |
+                                  +---------+-------------------+---------+
+                                            |                   |
+                     +----------------------+                   +---------------------+
+                     |                                                                |
+                     v                                                                v
+  +-------------------------------------+                          +-------------------------------------+
+  |           INVENTORY CORE            |                          |         INTELLIGENCE LAYER          |
+  |  Products / Suppliers / Warehouses  |                          |  7/28-Day Moving Averages & Trends  |
+  |  PO / SO / Receipts / Deliveries    |                          |  Stockout Prediction & Tiers        |
+  |  Transfers / Adjustments & Approvals|                          |  Smart Reorder Calculation (Floor 0)|
+  +------------------+------------------+                          |  EWMA Anomaly Detection (±3σ)       |
+                     |                                             |  Stock Health & Prediction Accuracy |
+                     |                                             +------------------+------------------+
+                     |                                                                |
+                     +----------------------+                   +---------------------+
+                                            |                   |
+                                            v                   v
+                                  +---------------------------------------+
+                                  |             STOCK LEDGER              |
+                                  |  (Single Source of Truth, Append-Only)|
+                                  |        apply_movement() Engine        |
+                                  +-------------------+-------------------+
+                                                      |
+                                                      v
+                                  +---------------------------------------+
+                                  |      DERIVED StockByLocation CACHE    |
+                                  |       (Row-Locked in Transactions)    |
+                                  +-------------------+-------------------+
+                                                      |
+                                                      v
+                                  +---------------------------------------+
+                                  |      PostgreSQL / SQLite Database     |
+                                  +---------------------------------------+
+```
+
+---
+
+## 13. Tech Stack (Implemented)
+
+*Note: The platform is built directly on PostgreSQL and FastAPI (Python) rather than NoSQL/Firestore, ensuring ACID guarantees, row-level locking, and native time-series numerical processing.*
+
+- **Backend**: FastAPI (Python 3.12) — Native NumPy and Pandas processing for moving averages, EWMA variance, and time-series forecasting in the same runtime.
+- **Database**: PostgreSQL (with SQLite compatibility for local dev/testing) accessed via SQLAlchemy 2.0 with explicit transaction boundaries, row-level locking (`with_for_update()`), and Alembic migrations.
+- **Frontend**: React + TypeScript styled with Tailwind CSS — Responsive Manager Dashboard and touch-optimized mobile-first Warehouse Worker Mode.
+- **Authentication**: JWT-based auth with role claims for the 4-role RBAC model (`Admin`, `Inventory Manager`, `Warehouse Worker`, `Viewer`).
+- **Scheduled Jobs**: APScheduler for nightly EWMA baseline recomputation and prediction accuracy evaluation.
+- **Notifications**: NotificationService abstraction with in-app notification center and simulated webhook/email log.
+
+---
+
+## 14. MVP vs Innovation vs Optional
+
+### Must Have (Base Requirements)
+- [x] Authentication + RBAC (4 roles enforced at API layer)
+- [x] Product / Category / UOM management (with conversion factors)
+- [x] Supplier management (lead times, reliability scores)
+- [x] Warehouses & Locations
+- [x] Purchase Orders -> Receipts (partial fulfillment, weighted average cost)
+- [x] Sales Orders -> Delivery Orders (stock reservation on confirm, release on delivery)
+- [x] Internal Transfers
+- [x] Inventory Adjustments (with approval workflow threshold)
+- [x] Stock Ledger (append-only, transactional, row-level locking)
+- [ ] Manager Dashboard with core KPIs & Filters
+- [ ] Search & Filters
+
+### High-Priority Innovation
+- [ ] Demand Forecasting (7-day/28-day moving average + trend + cold-start fallback)
+- [ ] Stockout Prediction with documented risk tiers (Low/Medium/High)
+- [ ] Smart Reorder Recommendation (exact documented formula, floored at 0)
+- [ ] Anomaly Detection (adaptive EWMA baseline + known-event exclusion)
+- [ ] Explainability Engine (numeric inputs reflected in plain language bullets)
+- [ ] Prediction Log / accuracy feedback view
+
+### Optional / Progressive Polish
+- [ ] Stock Health Score (0-100 composite)
+- [ ] Warehouse Worker Mode (touch-first manual search + barcode scan capability)
+- [ ] Return Orders (customer/supplier)
+- [ ] Lot/Batch tracking & FEFO picking
+- [ ] In-App Notification Center & simulated email logger
+
+---
+
+## 15. Build Sequencing (Hackathon Plan)
+- **Phase 1 — Foundation (Ledger-First)**: Auth/RBAC -> Products/Suppliers/Warehouses -> StockMovement + StockByLocation with transactional writes -> basic Receipt/Delivery/Transfer flows writing to ledger. *(Completed & Passing)*
+- **Phase 2b — Synthetic Demo Data + Dashboard Shell**: Seed script (Section 8) -> Adjustment + approval flow -> Dashboard KPIs + filters + React/Tailwind frontend shell.
+- **Phase 3 — Intelligence Layer**: Forecasting -> Stockout prediction -> Reorder recommendation -> Explainability bullets, all driven off the same ledger data.
+- **Phase 4 — Differentiators**: Anomaly detection -> Prediction log/accuracy view -> Stock Health Score.
+- **Phase 5 — Polish**: Worker Mode UI -> Notifications -> Return/Lots -> End-to-end demo rehearsal.
+
+---
+
+## 16. Demo Script
+1. **Receive stock**: Show a PO turning into a Receipt, stock ledger updates live with weighted average cost calculation.
+2. **Establish demand**: Point to the seeded 60–90 day history showing a believable, slightly upward trend.
+3. **Trigger the manufactured anomaly**: System flags it against the adaptive EWMA baseline (not a static rule) and explains why it's unusual.
+4. **Predict stockout**: Show the days-remaining calculation live, tied to the actual forecasted daily demand number on screen.
+5. **Recommend reorder**: Show the formula's inputs (lead time, safety stock, pending orders) plugged into the visible number.
+6. **Explain**: Bullets generated from the same inputs just shown, plus the risk tier/score.
+7. **Show the accuracy view**: Review predicted stockout date vs actual outcome from historical `PredictionLog`.
+
+---
+
+## 17. Competitive Positioning
+**Traditional System**: "What do I have? -> 148 units"  
+**StockSense**: 
+- "What do I have? -> 148 units"
+- "What will happen? -> Stockout in 5.5 days"
+- "Why? -> Demand up 22% vs trailing average, below safety stock"
+- "What should I do? -> Reorder 120 units"
+- "Is anything suspicious? -> Unusual spike flagged (EWMA ± 3σ), typical range shown"
+- "How good are these predictions? -> Accuracy log with verifiable historical audit"
