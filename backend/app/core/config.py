@@ -5,6 +5,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 
+raw_db_url = os.getenv("DATABASE_URL", "sqlite:///./stocksense.db")
+if raw_db_url.startswith("postgres://"):
+    raw_db_url = raw_db_url.replace("postgres://", "postgresql://", 1)
+
+
 class Settings(BaseSettings):
     PROJECT_NAME: str = "StockSense"
     API_V1_STR: str = "/api/v1"
@@ -13,10 +18,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours for hackathon/demo
     
     # Default to SQLite for easy local runs, or PostgreSQL if configured
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        "sqlite:///./stocksense.db"
-    )
+    DATABASE_URL: str = raw_db_url
     
     # Auto-approval threshold for inventory adjustments: relative % or absolute unit diff
     ADJUSTMENT_RELATIVE_THRESHOLD: float = 0.10  # 10%
@@ -35,6 +37,7 @@ engine = create_engine(
     connect_args=connect_args,
     echo=False
 )
+
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
