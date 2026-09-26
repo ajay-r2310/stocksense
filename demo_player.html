@@ -1,0 +1,100 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockSense - Product Demo Video & Pitch Subtitles</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: #070A10;
+      color: #F8FAFC;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    .subtitle-glow {
+      text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 16px rgba(99,102,241,0.5);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8">
+  <div class="max-w-5xl w-full space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-indigo-500 animate-pulse"></span>
+          <h1 class="text-2xl font-bold text-white tracking-tight">StockSense Demo Walkthrough</h1>
+        </div>
+        <p class="text-xs text-slate-400 mt-0.5">Predictive & Explainable Inventory Intelligence Platform</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          Subtitles Synced
+        </span>
+      </div>
+    </div>
+
+    <!-- Video Container with Live Subtitles -->
+    <div class="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl">
+      <img
+        id="demoImg"
+        src="stocksense_demo_video.webp"
+        alt="StockSense Demo Walkthrough"
+        class="w-full h-auto block object-contain select-none"
+      />
+
+      <!-- Live Synced Subtitle Overlay -->
+      <div class="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl text-center pointer-events-none z-20">
+        <div class="inline-block bg-black/85 backdrop-blur-md border border-indigo-500/30 rounded-2xl px-6 py-3 shadow-2xl">
+          <p id="subtitleText" class="text-sm sm:text-base font-semibold text-white subtitle-glow leading-relaxed">
+            Welcome to StockSense — the predictive and explainable inventory intelligence platform.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pitch Transcript & Chapter Navigation -->
+    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
+      <h3 class="text-sm font-bold text-white uppercase tracking-wider text-indigo-400">
+        Pitch Script & Chapters
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs" id="scriptList"></div>
+    </div>
+  </div>
+
+  <script>
+    const pitchLines = [
+      { start: 0, end: 5, text: "Welcome to StockSense — the predictive and explainable inventory intelligence platform." },
+      { start: 5, end: 10, text: "Most ERPs only record what already happened; StockSense predicts what will happen next." },
+      { start: 10, end: 16, text: "Here on the Executive Dashboard, we track real-time active SKUs, stockout alerts, and inventory valuation." },
+      { start: 16, end: 23, text: "Every single quantity is backed by an immutable double-entry ledger that guarantees 100% balance invariants." },
+      { start: 23, end: 29, text: "Our AI Intelligence Engine generates adaptive demand forecasts, safety stocks, and dynamic reorder points." },
+      { start: 29, end: 35, text: "Every recommendation is accompanied by plain-English explainability bullets for procurement teams." },
+      { start: 35, end: 41, text: "The Anomaly Radar flags shrinkage, dead stock, sudden demand spikes, and supplier delays." },
+      { start: 41, end: 47, text: "Warehouse staff can switch to Worker Touch Mode for mobile receiving, FEFO picking, and cycle counts." },
+      { start: 47, end: 55, text: "With automated email dispatching and multi-role RBAC security, StockSense is production-ready." }
+    ];
+
+    let startTime = Date.now();
+    const subtitleEl = document.getElementById("subtitleText");
+    const scriptListEl = document.getElementById("scriptList");
+
+    // Populate script list
+    pitchLines.forEach((item, idx) => {
+      const div = document.createElement("div");
+      div.className = "p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-1";
+      div.innerHTML = `<span class="text-[10px] font-mono text-indigo-400 font-bold">00:${String(item.start).padStart(2, '0')} - 00:${String(item.end).padStart(2, '0')}</span><p class="text-slate-300 font-medium">${item.text}</p>`;
+      scriptListEl.appendChild(div);
+    });
+
+    // Update subtitles every 500ms
+    setInterval(() => {
+      const elapsedSec = ((Date.now() - startTime) / 1000) % 55;
+      const current = pitchLines.find(p => elapsedSec >= p.start && elapsedSec < p.end);
+      if (current) {
+        subtitleEl.innerText = current.text;
+      }
+    }, 400);
+  </script>
+</body>
+</html>
