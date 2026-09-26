@@ -20,10 +20,15 @@ class ApiService {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        headers,
+      });
+    } catch (netErr: any) {
+      throw new Error(`Unable to connect to backend API at ${API_BASE_URL}. Ensure the backend server is running.`);
+    }
 
     if (response.status === 401) {
       // Clear token if expired/unauthorized
@@ -36,6 +41,7 @@ class ApiService {
       const errorData = await response.json().catch(() => ({ detail: "Unknown error occurred" }));
       throw new Error(errorData.detail || `Request failed with status ${response.status}`);
     }
+
 
     return response.json();
   }
