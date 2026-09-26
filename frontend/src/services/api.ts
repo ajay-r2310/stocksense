@@ -144,6 +144,86 @@ class ApiService {
       body: JSON.stringify(items),
     });
   }
+
+  // Intelligence Layer
+  async getForecast(productId: number) {
+    return this.request<any>(`/intelligence/forecast/${productId}`);
+  }
+
+  async getStockoutRisk(riskTier?: string, categoryId?: number) {
+    const params = new URLSearchParams();
+    if (riskTier) params.append("risk_tier", riskTier);
+    if (categoryId) params.append("category_id", categoryId.toString());
+    const q = params.toString() ? `?${params.toString()}` : "";
+    return this.request<any[]>(`/intelligence/stockout-risk${q}`);
+  }
+
+  async getReorderRecommendations(categoryId?: number, onlyActionable = false) {
+    const params = new URLSearchParams();
+    if (categoryId) params.append("category_id", categoryId.toString());
+    if (onlyActionable) params.append("only_actionable", "true");
+    const q = params.toString() ? `?${params.toString()}` : "";
+    return this.request<any[]>(`/intelligence/reorder-recommendations${q}`);
+  }
+
+  async getExplainability(productId: number) {
+    return this.request<any>(`/intelligence/explain/${productId}`);
+  }
+
+  async getPredictionAccuracy() {
+    return this.request<any>("/intelligence/prediction-accuracy");
+  }
+
+  async evaluatePredictions() {
+    return this.request<any>("/intelligence/evaluate-predictions", { method: "POST" });
+  }
+
+  // Anomalies & Known Events
+  async getAnomalies(productId?: number, unacknowledgedOnly = false) {
+    const params = new URLSearchParams();
+    if (productId) params.append("product_id", productId.toString());
+    if (unacknowledgedOnly) params.append("unacknowledged_only", "true");
+    const q = params.toString() ? `?${params.toString()}` : "";
+    return this.request<any[]>(`/anomalies${q}`);
+  }
+
+  async runAnomalyDetection() {
+    return this.request<any>("/anomalies/detect", { method: "POST" });
+  }
+
+  async acknowledgeAnomaly(anomalyId: number) {
+    return this.request<any>(`/anomalies/${anomalyId}/acknowledge`, { method: "POST" });
+  }
+
+  async getKnownEvents() {
+    return this.request<any[]>("/anomalies/known-events");
+  }
+
+  async createKnownEvent(data: { name: string; start_date: string; end_date: string; description?: string; category_id?: number }) {
+    return this.request<any>("/anomalies/known-events", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Stock Health Score
+  async getStockHealthScore() {
+    return this.request<any>("/intelligence/stock-health-score");
+  }
+
+  // Notifications
+  async getNotifications(unreadOnly = false) {
+    const q = unreadOnly ? "?unread_only=true" : "";
+    return this.request<any[]>(`/notifications${q}`);
+  }
+
+  async markNotificationRead(notificationId: number) {
+    return this.request<any>(`/notifications/${notificationId}/read`, { method: "POST" });
+  }
+
+  async getSimulatedEmailLogs() {
+    return this.request<any[]>("/notifications/simulated-emails");
+  }
 }
 
 export const api = new ApiService();

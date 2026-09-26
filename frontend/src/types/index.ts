@@ -52,6 +52,7 @@ export interface Location {
   id: number;
   warehouse_id: number;
   name: string;
+  code?: string;
   parent_location_id?: number | null;
   warehouse?: Warehouse;
 }

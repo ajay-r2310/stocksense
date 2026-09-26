@@ -204,42 +204,45 @@ $$\text{recommended\_reorder\_qty} = (\text{forecasted\_daily\_demand} \times \t
 *(where pending_incoming_qty is open PO lines not yet received)*. Never recommends a negative quantity (floor at 0).
 
 ### 7.4 Explainability
-Every recommendation is generated from the same numeric inputs used in the calculation — not a separately-authored narrative.
-**Shortage probability / Risk score (0–100):**
-$$\text{score} = \min(100, 40 \times \text{safety\_deficit\_factor} + 30 \times \text{demand\_trend\_factor} + 20 \times \text{lead\_time\_factor} + 10 \times \text{pending\_orders\_factor})$$
-Plus plain language bullet points explaining:
-- Demand surge relative to 28-day average
-- Current stock vs safety stock deficit
-- Supplier lead time coverage
-- Pending orders in transit
+Every recommendation is generated programmatically from the exact same numeric inputs used in the computation — not disconnected or templated text.
+
+**Shortage Tier (Low / Medium / High):**
+Rather than presenting a false-precision continuous score, StockSense collapses weighted inventory signals (safety-stock deficit, demand trend ratio, supplier lead-time coverage, and pending open POs) into clear, actionable **Low / Medium / High shortage tiers** calibrated to stockout horizons ($>14$d LOW, $4\text{–}14$d MEDIUM, $<4$d HIGH).
+
+**Plain Language Programmatic Explanations:**
+- Demand acceleration relative to the 28-day rolling average (e.g., `+18.4% upward trend detected`).
+- Current available stock vs configured safety stock deficit.
+- Supplier lead time coverage relative to daily consumption velocity.
+- Open in-transit POs currently scheduled for dock arrival (deducted from reorder quantity).
 
 ### 7.5 Anomaly Detection
-- Maintain an exponentially weighted moving average (EWMA) and EWMA-variance of daily movement quantity per product.
-- Flag a movement as anomalous if it falls outside $\text{EWMA} \pm 3 \times \text{EWMA\_stddev}$, recalculated daily.
-- **Known-event exclusion**: allow a manager to tag a date range (e.g. "Diwali sale", "quarterly bulk order") so movements in that window don't get flagged and don't permanently distort the baseline.
-- Output includes typical range, actual value, deviation %, and possible causes.
+- Exponentially weighted moving average (EWMA, span=14) and EWMA-variance baseline of daily movement consumption per product.
+- Outlier detection: Flags daily volumes exceeding $+3\sigma$ standard deviation threshold above the prior rolling baseline.
+- **Known-Event Exclusion**: Registered date windows (e.g. "Diwali Festive Season Surge") are automatically excluded from both anomaly alerts and moving baseline computation, preserving forecast accuracy without distortion.
+- Contextual output: typical EWMA baseline, actual volume, deviation %, Z-score, and explainable root-cause bullets.
 
 ### 7.6 Stock Health Score
-Composite, explainable score (0–100) per product built from:
-- Availability (available vs reorder level)
-- Demand Stability (variance of recent daily demand)
-- Supplier Reliability (% on time)
-- Overstock Risk (stock vs 60-day demand)
-- Stockout Risk
-- Recent Anomalies (flags in last 30 days)
+Composite, explainable 0–100 score built from 6 explicit sub-scores:
+1. **Availability Sub-score (0–25 pts)**: Stock vs safety stock buffer.
+2. **Demand Stability Sub-score (0–20 pts)**: Variance between 7-day and 28-day moving averages.
+3. **Supplier Reliability Sub-score (0–15 pts)**: Supplier on-time performance & lead time efficiency.
+4. **Overstock Control Sub-score (0–15 pts)**: Penalizes dead inventory exceeding 90 days of demand.
+5. **Stockout Mitigation Sub-score (0–15 pts)**: Penalizes SKUs in HIGH/MEDIUM risk tiers.
+6. **Recent Anomaly Health (0–10 pts)**: Penalizes unacknowledged consumption spikes in past 7 days.
 
 ### 7.7 Feedback Loop
-Every forecast/stockout prediction logs a row to `PredictionLog`. Daily/on-demand evaluation compares `predicted_stockout_date` vs actual stockout date, and surfaces a Prediction Accuracy view.
+Every rendered forecast and stockout projection logs a snapshot to `PredictionLog`. A backfill evaluation job reconciles predicted demand against actual verified `StockMovement` ledger consumption, surfacing MAE, RMSE, and MAPE metrics.
 
 ---
 
-## 8. Synthetic Data Strategy
-- 60–90 days of daily movement rows per key demo product.
-- Weekday/weekend variation (e.g. lower on weekends for B2B, higher for retail).
-- A subset of "hot" products with a slow upward trend (+0.5%/day).
-- One clear historical spike (e.g., festival week) to demonstrate known-event exclusion.
-- One deliberate recent anomaly in the last few days left unflagged for live demo detection.
-- Seed script located at `/scripts/seed_demo_data.py`.
+## 8. Enriched Synthetic Data Strategy
+The platform includes an idempotent 75-day synthetic transaction generator (`/scripts/seed_demo_data.py`) providing deterministic real-world signals across 10 SKUs, 2 warehouses, and 700+ movements:
+- **Engineered Upward Trend (+0.65%/day)**: Built into `MCU-STM32F4` and `SENS-GYRO-6AXIS` to validate dynamic 7d vs 28d moving average trend acceleration.
+- **Historical Seasonal Surge (45 days ago, 4.2x)**: Seeded into `RAW-RESIN-EPOXY` and bound to an active `KnownEvent` to validate exclusion filtering.
+- **Unflagged Live Anomaly (2 days ago, 6.5x surge)**: Seeded into `DISP-OLED-096` to provide the live demo detection moment.
+- **Cold-Start Item (8 days history)**: Seeded into `RAW-ALUM-2020` to validate fallback to category-level usage.
+- **In-Transit Open POs**: 50 units in transit for `MCU-STM32F4` to validate deduction from reorder recommendations.
+- **Pending Physical Adjustment**: Cycle count delta queued in `AdjustmentStatus.PENDING_APPROVAL` for manager authorization.
 
 ---
 

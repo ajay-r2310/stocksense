@@ -3,6 +3,9 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
 import { DashboardView } from "./views/DashboardView";
+import { WorkerModeView } from "./views/WorkerModeView";
+import { IntelligenceView } from "./views/IntelligenceView";
+import { AnomaliesView } from "./views/AnomaliesView";
 import { InventoryLedgerView } from "./views/InventoryLedgerView";
 import { ProductsView } from "./views/ProductsView";
 import { OrdersView } from "./views/OrdersView";
@@ -121,6 +124,29 @@ const MainApp: React.FC = () => {
               movements={movements}
               adjustments={adjustments}
               onNavigate={setCurrentTab}
+            />
+          )}
+
+          {currentTab === "worker_mode" && (
+            <WorkerModeView
+              products={products}
+              locations={locations}
+              warehouses={warehouses}
+              stockByLocation={stockByLocation}
+              onRefreshData={fetchAllData}
+            />
+          )}
+
+          {currentTab === "intelligence" && (
+            <IntelligenceView
+              products={products}
+              categories={categories}
+            />
+          )}
+
+          {currentTab === "anomalies" && (
+            <AnomaliesView
+              products={products}
             />
           )}
 

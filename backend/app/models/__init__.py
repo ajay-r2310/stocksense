@@ -21,7 +21,8 @@ from app.models.inventory import (
     MovementType,
     AdjustmentStatus,
 )
-from app.models.intelligence import PredictionLog, KnownEvent
+from app.models.intelligence import PredictionLog, KnownEvent, AnomalyRecord
+from app.models.notifications import Notification, SimulatedEmailLog
 
 __all__ = [
     "Base",

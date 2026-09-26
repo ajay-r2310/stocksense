@@ -25,6 +25,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
 
   const navItems = [
     { id: "dashboard", label: "Dashboard & KPIs", icon: LayoutDashboard, roles: ["Admin", "Inventory Manager", "Warehouse Worker", "Viewer"] },
+    { id: "worker_mode", label: "Worker Touch Mode", icon: ShieldCheck, roles: ["Admin", "Inventory Manager", "Warehouse Worker"] },
+    { id: "intelligence", label: "AI Intelligence", icon: Brain, roles: ["Admin", "Inventory Manager", "Warehouse Worker", "Viewer"] },
+    { id: "anomalies", label: "Anomaly Engine", icon: SlidersHorizontal, roles: ["Admin", "Inventory Manager", "Viewer"] },
     { id: "inventory", label: "Stock Ledger & Cache", icon: Layers, roles: ["Admin", "Inventory Manager", "Warehouse Worker", "Viewer"] },
     { id: "products", label: "Products Catalog", icon: Package, roles: ["Admin", "Inventory Manager", "Warehouse Worker", "Viewer"] },
     { id: "orders", label: "PO & Sales Orders", icon: ArrowLeftRight, roles: ["Admin", "Inventory Manager", "Warehouse Worker", "Viewer"] },

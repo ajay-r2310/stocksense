@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings, SessionLocal
 from app.db.init_db import init_db
-from app.api.routes import auth, products, warehouses, suppliers, inventory, orders
+from app.api.routes import auth, products, warehouses, suppliers, inventory, orders, intelligence, anomalies, notifications
 
 app = FastAPI(
     title="StockSense API",
@@ -56,3 +56,6 @@ app.include_router(warehouses.router, prefix=api_v1_prefix)
 app.include_router(suppliers.router, prefix=api_v1_prefix)
 app.include_router(inventory.router, prefix=api_v1_prefix)
 app.include_router(orders.router, prefix=api_v1_prefix)
+app.include_router(intelligence.router, prefix=api_v1_prefix)
+app.include_router(anomalies.router, prefix=api_v1_prefix)
+app.include_router(notifications.router, prefix=api_v1_prefix)

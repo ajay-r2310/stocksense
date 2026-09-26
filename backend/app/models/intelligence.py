@@ -46,5 +46,34 @@ class KnownEvent(Base):
     description = Column(String(255), nullable=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-
     creator = relationship("User")
+
+
+class AnomalyRecord(Base):
+    """
+    Detected demand or movement anomalies using EWMA ±3σ statistical bounds.
+    """
+    __tablename__ = "anomaly_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False, index=True)
+    event_date = Column(DateTime, nullable=False, index=True)
+    detected_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    actual_quantity = Column(Float, nullable=False)
+    expected_ewma = Column(Float, nullable=False)
+    std_dev = Column(Float, nullable=False)
+    z_score = Column(Float, nullable=False)
+    deviation_percentage = Column(Float, nullable=False)
+    anomaly_type = Column(String(50), default="SURGE")  # SURGE, DROP
+    
+    # Explainable contextual bullets
+    possible_causes = Column(String(500), nullable=True)
+    
+    is_acknowledged = Column(Integer, default=0)  # 0: Unacknowledged, 1: Acknowledged
+    acknowledged_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    acknowledged_at = Column(DateTime, nullable=True)
+
+    product = relationship("Product")
+    acknowledger = relationship("User", foreign_keys=[acknowledged_by])
+
